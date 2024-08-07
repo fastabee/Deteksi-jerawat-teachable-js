@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachable Machine Image Model</title>
+</head>
+<body>
+    <div>Teachable Machine Image Model</div>
+    <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+    <div id="label-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script type="text/javascript">
+        const modelURL = "model/";
+
+        let model, labelContainer, maxPredictions;
+
+        async function init() {
+            try {
+                const modelURLPath = modelURL + "model.json";
+                const metadataURL = modelURL + "metadata.json";
+
+                model = await tmImage.load(modelURLPath, metadataURL);
+                maxPredictions = model.getTotalClasses();
+
+                labelContainer = document.getElementById("label-container");
+                for (let i = 0; i < maxPredictions; i++) {
+                    labelContainer.appendChild(document.createElement("div"));
+                }
+            } catch (error) {
+                console.error("Error loading model:", error);
+            }
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.onload = async () => {
+                    try {
+                        await predict(img);
+                    } catch (error) {
+                        console.error("Error predicting image:", error);
+                    }
+                    URL.revokeObjectURL(img.src);
+                }
+                document.body.appendChild(img); // optional: to display the uploaded image
+            } else {
+                console.error("No file selected.");
+            }
+        }
+
+        async function predict(image) {
+            const prediction = await model.predict(image);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction = prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
